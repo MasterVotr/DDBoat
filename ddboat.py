@@ -302,7 +302,7 @@ def navigation(gps, imu, ref_x, ref_y, lat_lon_list):
         print("Distance to Reference Point: {:.2f} meters".format(distance))
         print("GPS Heading to Reference Point: {:.2f} degrees".format(gps_heading))
         print("Compass Heading: {:.2f} degrees".format(compass_heading))
-        print("-------------------------------------------")
+        print(80 * "-")
 
         # Append GPS data to list
         lat_lon_list.append((lat, lon))
@@ -334,22 +334,14 @@ def main_example():
 
     while True:
         # Navigation
-        x, y, cur_heading = navigation()
+        x, y, cur_heading = navigation(gps, imu, ref_x, ref_y, lat_lon_list)
 
         # Guidance
-        calculate_distance_and_heading(x, y, goal_x, goal_y)
+        d, new_heading = calculate_distance_and_heading(x, y, goal_x, goal_y)
+        heading_err = new_heading - cur_heading
 
         # Control
-        
 
-        # Calculate the desired heading
-        d_vec_x = x - goal_x
-        d_vec_y = y - goal_y
-
-
-        # Calculate the change that needs to happed
-        
-        # Control
 
 
         time.sleep(1)
