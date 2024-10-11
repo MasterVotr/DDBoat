@@ -1,5 +1,5 @@
 # ddboat_utils.py
-
+# python 3.5 so no print f"
 """
 DDBOAT Utility Module
 
@@ -359,11 +359,11 @@ def main_example():
         # Guidance
         distance_to_goal = current_coord.distance_to(goal_coord)
         angle_to_goal = current_coord.angle_to(goal_coord, cur_heading)
-
-        # Control
-        # Add your control logic here
         print(f"Distance to goal: {distance_to_goal:.2f} meters")
         print(f"Angle to goal: {angle_to_goal:.2f} degrees")
+
+        # Control
+        # TODO
 
         time.sleep(1)
 
