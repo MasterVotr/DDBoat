@@ -23,6 +23,7 @@ Author: Your Name
 Date: October 2024
 Contact: your.email@example.com
 """
+import signal
 
 import sys
 import os
@@ -101,7 +102,7 @@ class Coordinate:
         return angle_diff
 
     def __str__(self) -> str:
-        return f"Coordinate(x={self.x}, y={self.y})"
+        return "Coordinate(x={}, y={})".format(self.x, self.y)
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -130,6 +131,7 @@ def cvt_gll_ddmm_2_dd(gll_data):
         olon = -olon
     return olat, olon
 
+
 def initialize_gps():
     """
     Initialize the GPS module.
@@ -137,9 +139,37 @@ def initialize_gps():
     Returns:
     - gps (GpsIO): An instance of the GPS I/O class.
     """
-    gps = gpddrv.GpsIO()
-    gps.set_filter_speed("0")  # Allow GPS measures when stationary
+    gps = gpddrv.GpsIO(1)
+    gps.set_filter_speed("0.4")
+    gps.get_filter_speed()
+    gps.set_filter_speed("0")
+    gps.get_filter_speed()
     return gps
+
+
+
+def save_gps_data(lat_lon_list, filename='gps_data.kml'):
+    """
+    Save GPS data to a KML file.
+
+    Parameters:
+    - lat_lon_list (list): List of (latitude, longitude) tuples.
+    - filename (str): Name of the KML file to save.
+    """
+    print("Saving GPS data to {}...".format(filename))
+    kml = simplekml.Kml()
+    for i, (lat, lon) in enumerate(lat_lon_list):
+        kml.newpoint(name="GPS_{}".format(i), coords=[(lon, lat)])
+    kml.save(filename)
+    print("GPS data saved to {}".format(filename))
+
+def signal_handler(sig, frame):
+    """
+    Handle Ctrl+C signal by saving GPS data and exiting.
+    """
+    print("\nCtrl+C pressed. Saving GPS data and exiting...")
+    save_gps_data(lat_lon_list)
+    sys.exit(0)
 
 def read_gps_data(gps):
     """
@@ -152,11 +182,13 @@ def read_gps_data(gps):
     - tuple: (latitude in decimal degrees, longitude in decimal degrees)
     """
     while True:
-        gll_ok, gll_data = gps.read_gll_non_blocking()
-        if gll_ok:
-            lat, lon = cvt_gll_ddmm_2_dd(gll_data)
-            return lat, lon
+        rmc_ok, rmc_data = gps.read_rmc_non_blocking()
+        if rmc_ok:
+            lat_lon = cvt_gll_ddmm_2_dd(rmc_data)
+            if lat_lon[0] is not None and lat_lon[1] is not None:
+                return lat_lon
         time.sleep(0.01)
+
 
 def convert_to_utm(lat, lon):
     """
@@ -293,42 +325,48 @@ def log_to_kml(lat_lon_list, filename='gps_data.kml'):
     kml.save(filename)
 
 def navigation(gps, imu, ref_coord: Coordinate, lat_lon_list):
-    # Read GPS and compass data
+    """
+    Perform navigation by reading GPS and IMU data, computing positions and headings.
+
+    Parameters:
+    - gps (GpsIO): An instance of the GPS I/O class.
+    - imu (Imu9IO): An instance of the IMU I/O class.
+    - ref_coord (Coordinate): The reference coordinate to navigate towards.
+    - lat_lon_list (list): List to store latitude and longitude tuples.
+    
+    Returns:
+    - current_coord (Coordinate): The current UTM coordinate.
+    - compass_heading (float): The current compass heading in degrees.
+    """
     # Read GPS data
-    gll_ok, gll_data = gps.read_gll_non_blocking()
-    if gll_ok:
-        ilat, ilon = gll_data[0], gll_data[2]
-        lat = float(int(ilat/100)) + (ilat%100)/60
-        lon = float(int(ilon/100)) + (ilon%100)/60
-        if gll_data[3] == "W":
-            lon = -lon
-        current_coord = convert_to_utm(lat, lon)
+    lat, lon = read_gps_data(gps)
+    current_coord = convert_to_utm(lat, lon)
+    distance = current_coord.distance_to(ref_coord)
 
-        distance = current_coord.distance_to(ref_coord)
+    # Read IMU data
+    imu_data = read_imu_data(imu)
+    mag_raw = imu_data['magnetometer']
 
-        # Read IMU data
-        imu_data = read_imu_data(imu)
-        mag_raw = imu_data['magnetometer']
+    # Apply calibration and compute compass heading
+    mag_calib = apply_compass_calibration(mag_raw)
+    compass_heading = compute_compass_heading(mag_calib)
 
-        # Apply calibration and compute compass heading
-        mag_calib = apply_compass_calibration(mag_raw)
-        compass_heading = compute_compass_heading(mag_calib)
+    # Calculate angle to reference point
+    angle_to_ref = current_coord.angle_to(ref_coord, compass_heading)
 
-        # Calculate angle to reference point
-        angle_to_ref = current_coord.angle_to(ref_coord, compass_heading)
+    # Print outputs
+    print("Timestamp: {}".format(datetime.now()))
+    print("Position: ({:.6f}, {:.6f})".format(lat, lon))
+    print("Distance to Reference Point: {:.2f} meters".format(distance))
+    print("Angle to Reference Point: {:.2f} degrees".format(angle_to_ref))
+    print("Compass Heading: {:.2f} degrees".format(compass_heading))
+    print(80 * "-")
 
-        # Print outputs
-        print("Timestamp: {}".format(datetime.now()))
-        print("Position: ({:.6f}, {:.6f})".format(lat, lon))
-        print("Distance to Reference Point: {:.2f} meters".format(distance))
-        print("Angle to Reference Point: {:.2f} degrees".format(angle_to_ref))
-        print("Compass Heading: {:.2f} degrees".format(compass_heading))
-        print(80 * "-")
-
-        # Append GPS data to list
-        lat_lon_list.append((lat, lon))
+    # Append GPS data to list
+    lat_lon_list.append((lat, lon))
 
     return current_coord, compass_heading
+
 
 def main_example():
     """
@@ -350,31 +388,36 @@ def main_example():
     goal_coord = convert_to_utm(goal_lat, goal_lon)
 
     # Lists to store GPS data
+    global lat_lon_list
     lat_lon_list = []
 
-    while True:
-        # Navigation
-        current_coord, cur_heading = navigation(gps, imu, ref_coord, lat_lon_list)
+    # Set up signal handler for Ctrl+C
+    signal.signal(signal.SIGINT, signal_handler)
 
-        # Guidance
-        distance_to_goal = current_coord.distance_to(goal_coord)
-        angle_to_goal = current_coord.angle_to(goal_coord, cur_heading)
-        print(f"Distance to goal: {distance_to_goal:.2f} meters")
-        print(f"Angle to goal: {angle_to_goal:.2f} degrees")
+    print("Starting navigation. Press Ctrl+C to stop and save GPS data.")
 
-        # Control
-        # TODO
+    try:
+        while True:
+            # Navigation
+            current_coord, cur_heading = navigation(gps, imu, ref_coord, lat_lon_list)
 
-        time.sleep(1)
+            # Guidance
+            distance_to_goal = current_coord.distance_to(goal_coord)
+            angle_to_goal = current_coord.angle_to(goal_coord, cur_heading)
+            print("Distance to goal: {:.2f} meters".format(distance_to_goal))
+            print("Angle to goal: {:.2f} degrees".format(angle_to_goal))
+            # Control
+            # TODO
 
-    # Log GPS data
-    # log_to_gpx(lat_lon_list)
-    log_to_kml(lat_lon_list)
+            time.sleep(1)
 
-    # # Example motor control
-    # set_motor_speeds(ard, 100, -100)  # Rotate in place
-    # time.sleep(2)
-    # stop_motors(ard)
+    except KeyboardInterrupt:
+        # This block will be executed if Ctrl+C is pressed
+        print("\nCtrl+C pressed. Saving GPS data and exiting...")
+    finally:
+        # Save GPS data
+        save_gps_data(lat_lon_list)
+        print("GPS data saved. Exiting program.")
 
 if __name__ == '__main__':
     main_example()

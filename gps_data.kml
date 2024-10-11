@@ -1,10 +1,82 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2" xmlns:gx="http://www.google.com/kml/ext/2.2">
-    <Document id="1">
-        <Placemark id="3">
+    <Document id="29">
+        <Placemark id="31">
             <name>GPS_0</name>
-            <Point id="2">
-                <coordinates>-3.0142466666666667,48.199194999999996,0.0</coordinates>
+            <Point id="30">
+                <coordinates>-3.014213333333333,48.19923166666668,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="33">
+            <name>GPS_1</name>
+            <Point id="32">
+                <coordinates>-3.014211666666667,48.19923333333333,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="35">
+            <name>GPS_2</name>
+            <Point id="34">
+                <coordinates>-3.014208333333334,48.19923333333333,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="37">
+            <name>GPS_3</name>
+            <Point id="36">
+                <coordinates>-3.0142066666666665,48.199235,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="39">
+            <name>GPS_4</name>
+            <Point id="38">
+                <coordinates>-3.0142066666666665,48.19923666666667,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="41">
+            <name>GPS_5</name>
+            <Point id="40">
+                <coordinates>-3.0142066666666665,48.19923833333334,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="43">
+            <name>GPS_6</name>
+            <Point id="42">
+                <coordinates>-3.014205,48.199239999999996,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="45">
+            <name>GPS_7</name>
+            <Point id="44">
+                <coordinates>-3.014203333333333,48.199241666666666,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="47">
+            <name>GPS_8</name>
+            <Point id="46">
+                <coordinates>-3.0142016666666667,48.199243333333335,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="49">
+            <name>GPS_9</name>
+            <Point id="48">
+                <coordinates>-3.0141999999999998,48.199245000000005,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="51">
+            <name>GPS_10</name>
+            <Point id="50">
+                <coordinates>-3.0141983333333333,48.199246666666674,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="53">
+            <name>GPS_11</name>
+            <Point id="52">
+                <coordinates>-3.0141983333333333,48.19924833333333,0.0</coordinates>
+            </Point>
+        </Placemark>
+        <Placemark id="55">
+            <name>GPS_12</name>
+            <Point id="54">
+                <coordinates>-3.0141983333333333,48.19924833333333,0.0</coordinates>
             </Point>
         </Placemark>
     </Document>
