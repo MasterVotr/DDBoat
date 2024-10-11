@@ -389,10 +389,11 @@ def main_example():
     # Mission control
     waypoint_coords = []
     waypoint_coords_idx = 0
-
+    
     ## Goal point (example coordinates)
-    goal_lat = ref_lat
-    goal_lon = ref_lon
+    #goal: 48.19940238351465, -3.01552277111258
+    goal_lat = 48.19940238351465
+    goal_lon = -3.01552277111258
     goal_coord = convert_to_utm(goal_lat, goal_lon)
     waypoint_coords.append(goal_coord)
     
