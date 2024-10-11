@@ -411,7 +411,7 @@ def main_example():
     acceptable_distance_err = 5 # acceptable distance err in meters
 
     # Wait for the GPS to stabilize
-    time.sleep(20)
+    time.sleep(5)
 
     # Set up signal handler for Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
