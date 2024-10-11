@@ -57,6 +57,7 @@ projDegree2Meter = Proj(
 # Magnetic correction
 b = np.array([[6.],[1468.],[-4455.]])
 A = np.array([[[-73.05261869,-5.55853209,-7.24944167],[-1.10974578,61.19152157,4.77293562],[8.48208413,1.2818979,-66.35225166]]])
+A_inv = np.linalg.inv(A[0])  # A is a 3D array, so we need to use A[0]
 
 class Coordinate:
     def __init__(self, x: float, y: float):
@@ -242,7 +243,6 @@ def apply_compass_calibration(mag_raw):
     - numpy.ndarray: Calibrated magnetometer data [x_calib, y_calib, z_calib].
     """
     mag_raw_vector = np.array([[mag_raw[0]], [mag_raw[1]], [mag_raw[2]]])
-    A_inv = np.linalg.inv(A[0])  # A is a 3D array, so we need to use A[0]
     mag_calib = np.dot(A_inv, (mag_raw_vector + b))
     return mag_calib.flatten()  # Convert to 1D array
 
