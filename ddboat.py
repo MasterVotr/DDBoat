@@ -465,8 +465,10 @@ def main_example():
             print("DEBUG: F_l: {:.2f}", F_l)
             print("DEBUG: F_r: {:.2f}", F_r)
 
-            F_l = int(np.clip(F_l, -255.0, 255.0))
-            F_r = int(np.clip(F_r, -255.0, 255.0))
+            F_l = int(np.clip(F_l, 50.0, 255.0))
+            F_r = int(np.clip(F_r, 50.0, 255.0))
+
+            
 
 
             set_motor_speeds(ard, F_l, F_r)
