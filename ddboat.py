@@ -403,7 +403,7 @@ def main_example():
     waypoint_coord = waypoint_coords[waypoint_coords_idx]
 
     # Control constants
-    rot_a = 0.01
+    rot_a = 0.1
     rot_b = 0
     acc_a = 1
     acc_b = 0
@@ -452,17 +452,17 @@ def main_example():
             
             ## Turning
             if heading_to_waypoint > acceptable_heading_err:
-                F_r = rot_speed
-                print("DEBUG: Turning left")
-            elif heading_to_waypoint < -acceptable_heading_err:
                 F_l = rot_speed
                 print("DEBUG: Turning right")
+            elif heading_to_waypoint < -acceptable_heading_err:
+                F_r = rot_speed
+                print("DEBUG: Turning left")
 
             ## Forward speed
-            F_l += F_u/2
-            F_r += F_u/2
-            print("DEBUG: F_l: {:.2f}", rot_speed)
-            print("DEBUG: F_r: {:.2f}", F_u)
+            F_l += F_u / 2.0
+            F_r += F_u / 2.0
+            print("DEBUG: F_l: {:.2f}", F_l)
+            print("DEBUG: F_r: {:.2f}", F_r)
 
 
             set_motor_speeds(ard, F_l, F_r)
