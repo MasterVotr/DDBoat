@@ -33,6 +33,10 @@ from pyproj import Proj
 import gpxpy.gpx
 import simplekml
 from datetime import datetime
+import json
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from threading import Thread
+latest_nav_data = {}
 
 # Access to the drivers (adjust the path as needed)
 sys.path.append(os.path.join(os.path.dirname(__file__), 'drivers-ddboat-v2'))
@@ -58,6 +62,27 @@ projDegree2Meter = Proj(
 b = np.array([[6.],[1468.],[-4455.]])
 A = np.array([[[-73.05261869,-5.55853209,-7.24944167],[-1.10974578,61.19152157,4.77293562],[8.48208413,1.2818979,-66.35225166]]])
 A_inv = np.linalg.inv(A[0])  # A is a 3D array, so we need to use A[0]
+
+class SimpleHTTPRequestHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        if self.path == '/api/nav_data':
+            self.send_response(200)
+            self.send_header('Content-type', 'application/json')
+            self.end_headers()
+            # Use global latest_nav_data
+            global latest_nav_data
+            self.wfile.write(json.dumps(latest_nav_data).encode())
+        else:
+            self.send_response(404)
+            self.end_headers()
+            self.wfile.write(b'404 Not Found')
+
+
+def run_server(port=8000):
+    server_address = ('0.0.0.0', port)  # Changed from '' to '0.0.0.0'
+    httpd = HTTPServer(server_address, SimpleHTTPRequestHandler)
+    print("Server running on port {}".format(port))
+    httpd.serve_forever()
 
 class Coordinate:
     def __init__(self, x: float, y: float):
@@ -325,6 +350,8 @@ def log_to_kml(lat_lon_list, filename='gps_data.kml'):
     kml.save(filename)
 
 def navigation(gps, imu, ref_coord: Coordinate, lat_lon_list):
+    global latest_nav_data
+
     """
     Perform navigation by reading GPS and IMU data, computing positions and headings.
 
@@ -353,6 +380,14 @@ def navigation(gps, imu, ref_coord: Coordinate, lat_lon_list):
 
     # Calculate angle to reference point
     angle_to_ref = current_coord.angle_to(ref_coord, compass_heading)
+
+    latest_nav_data = {
+        "timestamp": datetime.now().isoformat(),
+        "position": {"lat": lat, "lon": lon},
+        "distance_to_ref": float(distance),  # Ensure it's JSON serializable
+        "angle_to_ref": float(angle_to_ref),
+        "compass_heading": float(compass_heading)
+    }
 
     # Print outputs
     print("Timestamp: {}".format(datetime.now()))
@@ -418,6 +453,13 @@ def main_example():
     signal.signal(signal.SIGINT, signal_handler)
 
     print("Starting navigation. Press Ctrl+C to stop and save GPS data.")
+    server_thread = Thread(target=run_server)
+    server_thread.daemon = True
+    server_thread.start()
+
+    print("Starting navigation. Press Ctrl+C to stop and save GPS data.")
+    print("Access navigation data at http://localhost:8000/api/nav_data")
+
 
     try:
         while True:
