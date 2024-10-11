@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Navigation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
+
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+    </style>
+</head>
+<body>
+    <h1>Real-Time Navigation Data</h1>
+    <div id="map"></div>
+
+    <script>
+        var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+        // Initialize the map and set default center and zoom level
+        var map = L.map('map').setView([0, 0], 2);
+
+        // Set up the OpenStreetMap tile layer
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+        }).addTo(map);
+
+        // Create a marker for the current position
+        var marker = L.marker([0, 0]).addTo(map);
+
+        // Define blue and red arrows for compass heading and angle to reference
+        var compassLine = L.polyline([], { color: 'blue', weight: 3 }).addTo(map);
+        var refLine = L.polyline([], { color: 'red', weight: 3 }).addTo(map);
+
+        // Helper function to calculate endpoint of arrow based on heading and distance
+        function calculateEndpoint(lat, lon, heading, distance) {
+            // Convert heading from degrees to radians
+            var headingRad = heading * Math.PI / 180;
+            
+            // Earth radius in meters
+            var earthRadius = 6378137;
+
+            // Calculate the new coordinates
+            var newLat = lat + (distance * Math.cos(headingRad)) / earthRadius * (180 / Math.PI);
+            var newLon = lon + (distance * Math.sin(headingRad)) / (earthRadius * Math.cos(lat * Math.PI / 180)) * (180 / Math.PI);
+
+            return [newLat, newLon];
+        }
+
+        // Listen for 'nav_data' event from the server
+        socket.on('nav_data', function (data) {
+            var lat = data.position.lat;
+            var lon = data.position.lon;
+            var angle_to_ref = data.angle_to_ref; // Angle relative to compass heading
+            var compass_heading = data.compass_heading; // Angle relative to north
+            var distance_to_ref = data.distance_to_ref;
+
+            // Update the marker position and popup
+            marker.setLatLng([lat, lon]).bindPopup(
+                'Lat: ' + lat + ', Lon: ' + lon + '<br>' +
+                'Angle to Ref: ' + angle_to_ref.toFixed(2) + '°<br>' +
+                'Compass Heading: ' + compass_heading.toFixed(2) + '°<br>' +
+                'Distance to Ref: ' + distance_to_ref.toFixed(2) + ' meters'
+            ).openPopup();
+
+            // Center the map on the updated position
+            map.setView([lat, lon], 14);
+
+            // Calculate endpoint for compass heading (500 meters distance for visual clarity)
+            var compassEndpoint = calculateEndpoint(lat, lon, compass_heading, 500);
+
+            // Calculate endpoint for angle to reference
+            // Since angle_to_ref is relative to the current heading, we rotate from the compass heading
+            var refEndpoint = calculateEndpoint(lat, lon, compass_heading + angle_to_ref, 500);
+
+            // Update the blue arrow for compass heading
+            compassLine.setLatLngs([[lat, lon], compassEndpoint]);
+
+            // Update the red arrow for angle to reference (relative to compass heading)
+            refLine.setLatLngs([[lat, lon], refEndpoint]);
+        });
+    </script>
+</body>
+</html>
