@@ -387,7 +387,7 @@ def main_example():
     ref_coord = convert_to_utm(ref_lat, ref_lon)
 
     # Mission control
-    waypoint_coords: list[Coordinate] = []
+    waypoint_coords = []
     waypoint_coords_idx = 0
 
     ## Goal point (example coordinates)
@@ -442,6 +442,9 @@ def main_example():
             # Control
             rot_speed = rot_a * heading_to_waypoint + rot_b
             F_u = acc_a * distance_to_waypoint + acc_b
+
+            print("DEBUG: rot_speed: {:.2f}", rot_speed)
+            print("DEBUG: F_u: {:.2f}", F_u)
             
             # Actuator layer
             F_l = 0
@@ -450,15 +453,21 @@ def main_example():
             ## Turning
             if heading_to_waypoint > acceptable_heading_err:
                 F_r = rot_speed
+                print("DEBUG: Turning left")
             elif heading_to_waypoint < -acceptable_heading_err:
                 F_l = rot_speed
+            print("DEBUG: Turning right")
 
             ## Forward speed
             F_l += F_u/2
             F_r += F_u/2
+            print("DEBUG: F_l: {:.2f}", rot_speed)
+            print("DEBUG: F_r: {:.2f}", F_u)
+
 
             set_motor_speeds(ard, F_l, F_r)
 
+            print(80*"=")
             time.sleep(1)
 
         print("All waypoints reached, mission done!")
@@ -469,6 +478,7 @@ def main_example():
     finally:
         # Save GPS data
         save_gps_data(lat_lon_list)
+        stop_motors(ard)
         print("GPS data saved. Exiting program.")
 
 if __name__ == '__main__':
