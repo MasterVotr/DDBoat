@@ -405,7 +405,7 @@ def main_example():
     # Control constants
     rot_a = 0.1
     rot_b = 0
-    acc_a = 1
+    acc_a = 2
     acc_b = 0
     acceptable_heading_err = 20 # acceptable heading err in degrees
     acceptable_distance_err = 5 # acceptable distance err in meters
@@ -464,6 +464,8 @@ def main_example():
             print("DEBUG: F_l: {:.2f}", F_l)
             print("DEBUG: F_r: {:.2f}", F_r)
 
+            F_l = np.clamp(F_l, -255, 255)
+            F_r = np.clamp(F_r, -255, 255)
 
             set_motor_speeds(ard, F_l, F_r)
 
