@@ -403,10 +403,10 @@ def main_example():
     waypoint_coord = waypoint_coords[waypoint_coords_idx]
 
     # Control constants
-    rot_a = 1
-    rot_b = 1
+    rot_a = 0.01
+    rot_b = 0
     acc_a = 1
-    acc_b = 1
+    acc_b = 0
     acceptable_heading_err = 20 # acceptable heading err in degrees
     acceptable_distance_err = 5 # acceptable distance err in meters
 
@@ -440,7 +440,7 @@ def main_example():
                 waypoint_coord = waypoint_coords[waypoint_coords_idx]
 
             # Control
-            rot_speed = rot_a * heading_to_waypoint + rot_b
+            rot_speed = rot_a * np.fabs(heading_to_waypoint) + rot_b
             F_u = acc_a * distance_to_waypoint + acc_b
 
             print("DEBUG: rot_speed: {:.2f}", rot_speed)
@@ -456,7 +456,7 @@ def main_example():
                 print("DEBUG: Turning left")
             elif heading_to_waypoint < -acceptable_heading_err:
                 F_l = rot_speed
-            print("DEBUG: Turning right")
+                print("DEBUG: Turning right")
 
             ## Forward speed
             F_l += F_u/2
