@@ -377,19 +377,41 @@ def main_example():
     imu = initialize_imu()
     ard = initialize_motors()
 
+    # Lists to store GPS data
+    global lat_lon_list
+    lat_lon_list = []
+
     # Reference point (example coordinates)
     ref_lat = 48.199111
     ref_lon = -3.014930
     ref_coord = convert_to_utm(ref_lat, ref_lon)
 
-    # Goal point (example coordinates)
+    # Mission control
+    waypoint_coords: list[Coordinate] = []
+    waypoint_coords_idx = 0
+
+    ## Goal point (example coordinates)
     goal_lat = ref_lat
     goal_lon = ref_lon
     goal_coord = convert_to_utm(goal_lat, goal_lon)
+    waypoint_coords.append(goal_coord)
+    
+    ## Start point
+    start_coord, _ = navigation(gps, imu, ref_coord, lat_lon_list)
+    waypoint_coords.append(start_coord)
+    
+    waypoint_coord = waypoint_coords[waypoint_coords_idx]
 
-    # Lists to store GPS data
-    global lat_lon_list
-    lat_lon_list = []
+    # Control constants
+    rot_a = 1
+    rot_b = 1
+    acc_a = 1
+    acc_b = 1
+    acceptable_heading_err = 20 # acceptable heading err in degrees
+    acceptable_distance_err = 5 # acceptable distance err in meters
+
+    # Wait for the GPS to stabilize
+    time.sleep(20)
 
     # Set up signal handler for Ctrl+C
     signal.signal(signal.SIGINT, signal_handler)
@@ -402,14 +424,44 @@ def main_example():
             current_coord, cur_heading = navigation(gps, imu, ref_coord, lat_lon_list)
 
             # Guidance
-            distance_to_goal = current_coord.distance_to(goal_coord)
-            angle_to_goal = current_coord.angle_to(goal_coord, cur_heading)
-            print("Distance to goal: {:.2f} meters".format(distance_to_goal))
-            print("Angle to goal: {:.2f} degrees".format(angle_to_goal))
+            distance_to_waypoint = current_coord.distance_to(waypoint_coord)
+            heading_to_waypoint = current_coord.angle_to(waypoint_coord, cur_heading)
+            print("Distance to goal: {:.2f} meters".format(distance_to_waypoint))
+            print("Heading to goal: {:.2f} degrees".format(heading_to_waypoint))
+
+            # Mission control
+            if (distance_to_waypoint < acceptable_distance_err):
+                print("Waypoint [{:.2f}, {:.2f}] reached".format(waypoint_coord.x, waypoint_coord.y))
+                waypoint_coords_idx += 1
+                if waypoint_coords_idx == len(waypoint_coords):
+                    break
+                stop_motors(ard)
+                time.sleep(5)
+                waypoint_coord = waypoint_coords[waypoint_coords_idx]
+
             # Control
-            # TODO
+            rot_speed = rot_a * heading_to_waypoint + rot_b
+            F_u = acc_a * distance_to_waypoint + acc_b
+            
+            # Actuator layer
+            F_l = 0
+            F_r = 0
+            
+            ## Turning
+            if heading_to_waypoint > acceptable_heading_err:
+                F_r = rot_speed
+            elif heading_to_waypoint < -acceptable_heading_err:
+                F_l = rot_speed
+
+            ## Forward speed
+            F_l += F_u/2
+            F_r += F_u/2
+
+            set_motor_speeds(ard, F_l, F_r)
 
             time.sleep(1)
+
+        print("All waypoints reached, mission done!")
 
     except KeyboardInterrupt:
         # This block will be executed if Ctrl+C is pressed
