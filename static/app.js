@@ -15,8 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let pathLine = null;
     let goalArrow = null;
     let headingArrow = null;
-    let goalArrowHead = null;
-    let headingArrowHead = null;
+    // Removed arrowhead variables
+    // let goalArrowHead = null;
+    // let headingArrowHead = null;
 
     let gpsDataHistory = [];
 
@@ -88,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Historic mode
             slider.removeAttribute('disabled');
             slider.style.display = 'block';
+            updateSlider(); // Ensure slider is updated when switching to historic mode
         }
     });
 
@@ -117,12 +119,13 @@ document.addEventListener('DOMContentLoaded', () => {
     socket.on('gps_data_update', (data) => {
         console.log('Received gps_data_update:', data);
         gpsDataHistory.push(data);
-        updateSlider(); // Update the slider with new data
 
         if (isLiveMode) {
+            updateSlider(); // Update the slider with new data
             updateMap(data);
             updateUI(data);
         }
+        // Do not update the slider in historic mode to prevent it from expanding
     });
 
     socket.on('history_data', (data) => {
@@ -190,16 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Function to create arrowhead markers using SVG
-    function createArrowhead(latlng, angle, color) {
-        const arrowheadIcon = L.divIcon({
-            className: 'arrowhead-icon',
-            html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 0 L24 24 L12 18 L0 24 Z" transform="translate(0, -6) rotate(${angle}, 12, 12)" />
-                   </svg>`
-        });
-        return L.marker(latlng, { icon: arrowheadIcon }).addTo(map);
-    }
+    // Removed createArrowhead function since we no longer use arrowheads
 
     // Update the map with new data
     function updateMap(data, isReplay = false, replayIndex = null) {
@@ -217,8 +211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             currentMarker = L.marker(latlng).addTo(map);
         }
 
-        // Calculate endpoint for heading arrow
-        const headingLength = 100; // Arrow length in meters
+        // Calculate endpoint for heading line
+        const headingLength = 100; // Line length in meters
         const headingBearing = normalizeAngle(data.compass_heading);
         const headingPosition = calculateDestinationPoint(
             data.position.lat,
@@ -227,25 +221,18 @@ document.addEventListener('DOMContentLoaded', () => {
             headingLength
         );
 
-        // Remove existing heading arrow if it exists
+        // Remove existing heading line if it exists
         if (headingArrow) {
             map.removeLayer(headingArrow);
             headingArrow = null;
         }
-        if (headingArrowHead) {
-            map.removeLayer(headingArrowHead);
-            headingArrowHead = null;
-        }
 
-        // Draw arrow for current heading
+        // Draw line for current heading
         headingArrow = L.polyline([latlng, [headingPosition.lat, headingPosition.lon]], {
             color: 'blue',
             weight: 2,
             opacity: 0.8,
         }).addTo(map);
-
-        // Add arrowhead as a marker
-        headingArrowHead = createArrowhead([headingPosition.lat, headingPosition.lon], headingBearing, 'blue');
 
         // Calculate the bearing towards the goal
         let bearingToGoal = normalizeAngle(data.compass_heading + data.angle_to_ref);
@@ -258,25 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
             data.distance_to_ref
         );
 
-        // Remove existing goal arrow if it exists
+        // Remove existing goal line if it exists
         if (goalArrow) {
             map.removeLayer(goalArrow);
             goalArrow = null;
         }
-        if (goalArrowHead) {
-            map.removeLayer(goalArrowHead);
-            goalArrowHead = null;
-        }
 
-        // Draw arrow to goal
+        // Draw line to goal
         goalArrow = L.polyline([latlng, [goalPosition.lat, goalPosition.lon]], {
             color: 'green',
             weight: 2,
             opacity: 0.8,
         }).addTo(map);
-
-        // Add arrowhead as a marker
-        goalArrowHead = createArrowhead([goalPosition.lat, goalPosition.lon], bearingToGoal, 'green');
 
         // Update path line
         if (isReplay && replayIndex !== null) {
@@ -293,14 +273,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Update the path line with color fading and dashed style
+    // Update the path line
     function updatePathLine(data) {
         if (pathLine) {
             map.removeLayer(pathLine);
         }
         const latlngs = data.map(d => [d.position.lat, d.position.lon]);
 
+        // Draw the path line without gradient
         pathLine = new L.Polyline(latlngs, {
+            color: 'red',
             weight: 5,
             opacity: 1,
             dashArray: '10, 10' // Makes the line dashed
@@ -318,24 +300,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update the timeline slider
     function updateSlider() {
-        if (gpsDataHistory.length > 0) {
-            if (isLiveMode) {
-                slider.noUiSlider.updateOptions({
-                    range: {
-                        'min': 0,
-                        'max': gpsDataHistory.length - 1
-                    }
-                });
-                slider.noUiSlider.set(gpsDataHistory.length - 1);
-            } else {
-                slider.noUiSlider.updateOptions({
-                    range: {
-                        'min': 0,
-                        'max': gpsDataHistory.length - 1
-                    },
-                    lock: true // Prevent expansion in historic mode
-                });
-            }
+        if (gpsDataHistory.length > 0 && isLiveMode) {
+            slider.noUiSlider.updateOptions({
+                range: {
+                    'min': 0,
+                    'max': gpsDataHistory.length - 1
+                }
+            });
+            slider.noUiSlider.set(gpsDataHistory.length - 1);
         }
 
         if (isLiveMode) {
@@ -368,14 +340,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (headingArrow) {
                         map.removeLayer(headingArrow);
                         headingArrow = null;
-                    }
-                    if (goalArrowHead) {
-                        map.removeLayer(goalArrowHead);
-                        goalArrowHead = null;
-                    }
-                    if (headingArrowHead) {
-                        map.removeLayer(headingArrowHead);
-                        headingArrowHead = null;
                     }
                     slider.noUiSlider.updateOptions({
                         range: {
@@ -424,14 +388,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (headingArrow) {
                     map.removeLayer(headingArrow);
                     headingArrow = null;
-                }
-                if (goalArrowHead) {
-                    map.removeLayer(goalArrowHead);
-                    goalArrowHead = null;
-                }
-                if (headingArrowHead) {
-                    map.removeLayer(headingArrowHead);
-                    headingArrowHead = null;
                 }
                 slider.noUiSlider.updateOptions({
                     range: {
