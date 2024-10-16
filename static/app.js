@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Map control variables
     let userInteracted = false;
-    let isLiveMode = true; // true for live mode, false for replay mode
+    let isLiveMode = true; // true for live mode, false for historic mode
 
     // UI Elements
     const latitudeEl = document.getElementById('latitude');
@@ -59,29 +59,35 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     slider.setAttribute('disabled', true);
+    slider.style.display = 'none'; // Hide slider initially
 
     // Function to update mode indicator
     function updateModeIndicator() {
-        modeIndicator.textContent = isLiveMode ? 'Live' : 'Replay';
-    }
-
-    // Mode switch event listener
-    modeSwitch.addEventListener('change', () => {
-        isLiveMode = !modeSwitch.checked; // Assuming checked is Replay mode
-        updateModeIndicator();
+        modeIndicator.textContent = isLiveMode ? 'Live' : 'Historic';
 
         if (isLiveMode) {
-            // Live mode
-            slider.setAttribute('disabled', true);
             // Update to latest data
             if (gpsDataHistory.length > 0) {
                 const lastData = gpsDataHistory[gpsDataHistory.length - 1];
                 updateMap(lastData);
                 updateUI(lastData);
             }
+        }
+    }
+
+    // Mode switch event listener
+    modeSwitch.addEventListener('change', () => {
+        isLiveMode = !modeSwitch.checked; // Assume checked is Historic mode
+        updateModeIndicator();
+
+        if (isLiveMode) {
+            // Live mode
+            slider.setAttribute('disabled', true);
+            slider.style.display = 'none';
         } else {
-            // Replay mode
+            // Historic mode
             slider.removeAttribute('disabled');
+            slider.style.display = 'block';
         }
     });
 
@@ -184,15 +190,15 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // Function to create arrowhead markers
+    // Function to create arrowhead markers using SVG
     function createArrowhead(latlng, angle, color) {
         const arrowheadIcon = L.divIcon({
             className: 'arrowhead-icon',
-            html: `<div style="transform: rotate(${angle}deg); color:${color};">&#x25B2;</div>`,
-            iconSize: [0, 0],
-            iconAnchor: [0, 0],
+            html: `<svg width="24" height="24" viewBox="0 0 24 24" fill="${color}" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 0 L24 24 L12 18 L0 24 Z" transform="translate(0, -6) rotate(${angle}, 12, 12)" />
+                   </svg>`
         });
-        return L.marker(latlng, { icon: arrowheadIcon, rotationAngle: angle }).addTo(map);
+        return L.marker(latlng, { icon: arrowheadIcon }).addTo(map);
     }
 
     // Update the map with new data
@@ -294,21 +300,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         const latlngs = data.map(d => [d.position.lat, d.position.lon]);
 
-        // Create a gradient for the path line
-        const gradient = {
-            0.0: 'red',   // Oldest point
-            0.5: 'yellow',
-            1.0: 'blue'   // Newest point
-        };
-
         pathLine = new L.Polyline(latlngs, {
             weight: 5,
             opacity: 1,
             dashArray: '10, 10' // Makes the line dashed
         }).addTo(map);
-
-        // Apply gradient using leaflet-polylinegradient
-        pathLine.setStyle({ gradient });
     }
 
     // Update the UI elements with new data
@@ -322,17 +318,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update the timeline slider
     function updateSlider() {
-        slider.noUiSlider.updateOptions({
-            range: {
-                'min': 0,
-                'max': gpsDataHistory.length - 1
+        if (gpsDataHistory.length > 0) {
+            if (isLiveMode) {
+                slider.noUiSlider.updateOptions({
+                    range: {
+                        'min': 0,
+                        'max': gpsDataHistory.length - 1
+                    }
+                });
+                slider.noUiSlider.set(gpsDataHistory.length - 1);
+            } else {
+                slider.noUiSlider.updateOptions({
+                    range: {
+                        'min': 0,
+                        'max': gpsDataHistory.length - 1
+                    },
+                    lock: true // Prevent expansion in historic mode
+                });
             }
-        });
+        }
+
         if (isLiveMode) {
-            slider.noUiSlider.set(gpsDataHistory.length - 1);
             slider.setAttribute('disabled', true);
+            slider.style.display = 'none';
         } else {
             slider.removeAttribute('disabled');
+            slider.style.display = 'block';
         }
     }
 
@@ -374,6 +385,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                     slider.noUiSlider.set(0);
                     slider.setAttribute('disabled', true);
+                    slider.style.display = 'none';
                     alert('GPS data history cleared.');
                 } else {
                     alert('Failed to clear GPS data.');
@@ -429,6 +441,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 slider.noUiSlider.set(0);
                 slider.setAttribute('disabled', true);
+                slider.style.display = 'none';
             } else {
                 alert('Failed to set data source IP.');
             }
