@@ -1,107 +1,74 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    
-    <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
-    
-        <script>
-            L_NO_TOUCH = false;
-            L_DISABLE_3D = false;
-        </script>
-    
-    <style>html, body {width: 100%;height: 100%;margin: 0;padding: 0;}</style>
-    <style>#map {position:absolute;top:0;bottom:0;right:0;left:0;}</style>
-    <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.js"></script>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.3/dist/leaflet.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css"/>
-    <link rel="stylesheet" href="https://netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap-glyphicons.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.2.0/css/all.min.css"/>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Leaflet.awesome-markers/2.0.2/leaflet.awesome-markers.css"/>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/python-visualization/folium/folium/templates/leaflet.awesome.rotate.min.css"/>
-    
-            <meta name="viewport" content="width=device-width,
-                initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-            <style>
-                #map_f46d5e0beff91499ca78609d317ef6e8 {
-                    position: relative;
-                    width: 100.0%;
-                    height: 100.0%;
-                    left: 0.0%;
-                    top: 0.0%;
-                }
-                .leaflet-container { font-size: 1rem; }
-            </style>
-        
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GPS Visualization Debug</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; }
+        #ip-form, #data-display { margin-bottom: 20px; }
+        #log { background-color: #f0f0f0; padding: 10px; height: 200px; overflow-y: scroll; }
+    </style>
 </head>
 <body>
+    <h1>GPS Visualization Debug</h1>
     
-    
-            <div class="folium-map" id="map_f46d5e0beff91499ca78609d317ef6e8" ></div>
+    <div id="ip-form">
+        <input type="text" id="ip-address" placeholder="Enter IP address (e.g., 172.20.25.205)">
+        <button onclick="setDataSource()">Set Data Source</button>
+    </div>
+
+    <div id="data-display">
+        <h2>Latest Data:</h2>
+        <pre id="latest-data">No data received yet.</pre>
+    </div>
+
+    <button onclick="fetchData()">Fetch Data (Manual)</button>
+
+    <h2>Log:</h2>
+    <div id="log"></div>
+
+    <script>
+        const socket = io();
         
+        function setDataSource() {
+            const ip = document.getElementById('ip-address').value;
+            fetch('/set_data_source', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `ip=${ip}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                log(`Data source set: ${data.message}`);
+            })
+            .catch(error => log(`Error setting data source: ${error}`));
+        }
+
+        function fetchData() {
+            socket.emit('fetch_data');
+        }
+
+        socket.on('new_data', (data) => {
+            document.getElementById('latest-data').textContent = JSON.stringify(data, null, 2);
+            log(`Received new data: ${JSON.stringify(data)}`);
+        });
+
+        socket.on('error', (data) => {
+            log(`Error: ${data.message}`);
+        });
+
+        function log(message) {
+            const logElement = document.getElementById('log');
+            logElement.innerHTML += `<div>${new Date().toISOString()}: ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        // Log when connected to the server
+        socket.on('connect', () => {
+            log('Connected to server');
+        });
+    </script>
 </body>
-<script>
-    
-    
-            var map_f46d5e0beff91499ca78609d317ef6e8 = L.map(
-                "map_f46d5e0beff91499ca78609d317ef6e8",
-                {
-                    center: [0.0, -0.0],
-                    crs: L.CRS.EPSG3857,
-                    zoom: 14,
-                    zoomControl: true,
-                    preferCanvas: false,
-                }
-            );
-
-            
-
-        
-    
-            var tile_layer_6ee1b4092515f63b4f2eac768ae30bb3 = L.tileLayer(
-                "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-                {"attribution": "\u0026copy; \u003ca href=\"https://www.openstreetmap.org/copyright\"\u003eOpenStreetMap\u003c/a\u003e contributors", "detectRetina": false, "maxNativeZoom": 19, "maxZoom": 19, "minZoom": 0, "noWrap": false, "opacity": 1, "subdomains": "abc", "tms": false}
-            );
-        
-    
-            tile_layer_6ee1b4092515f63b4f2eac768ae30bb3.addTo(map_f46d5e0beff91499ca78609d317ef6e8);
-        
-    
-            var marker_e3cfafa22bae9ac5233d949f42c1202f = L.marker(
-                [0.0, -0.0],
-                {}
-            ).addTo(map_f46d5e0beff91499ca78609d317ef6e8);
-        
-    
-            var icon_8d2831409844ef8a4940fc96eeecaba5 = L.AwesomeMarkers.icon(
-                {"extraClasses": "fa-rotate-0", "icon": "info-sign", "iconColor": "white", "markerColor": "blue", "prefix": "glyphicon"}
-            );
-            marker_e3cfafa22bae9ac5233d949f42c1202f.setIcon(icon_8d2831409844ef8a4940fc96eeecaba5);
-        
-    
-        var popup_96c67244d7a9f10d045628503b866520 = L.popup({"maxWidth": "100%"});
-
-        
-            
-                var html_91af6698586df7b3b0fd7de1d2d35080 = $(`<div id="html_91af6698586df7b3b0fd7de1d2d35080" style="width: 100.0%; height: 100.0%;">Lat: 0.0, Lon: -0.0<br>Angle to Reference: -138.12°<br>Compass Heading: 134.53°<br>Distance to Reference: 5348937.31 meters</div>`)[0];
-                popup_96c67244d7a9f10d045628503b866520.setContent(html_91af6698586df7b3b0fd7de1d2d35080);
-            
-        
-
-        marker_e3cfafa22bae9ac5233d949f42c1202f.bindPopup(popup_96c67244d7a9f10d045628503b866520)
-        ;
-
-        
-    
-    
-            marker_e3cfafa22bae9ac5233d949f42c1202f.bindTooltip(
-                `<div>
-                     Current Position
-                 </div>`,
-                {"sticky": true}
-            );
-        
-</script>
 </html>

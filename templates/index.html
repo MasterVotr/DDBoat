@@ -1,90 +1,57 @@
+<!-- templates/index.html -->
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Navigation</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <title>GPS Visualization App</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" />
-
-    <style>
-        #map {
-            height: 600px;
-            width: 100%;
-        }
-    </style>
+    <!-- noUiSlider CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nouislider@15.5.1/dist/nouislider.min.css" />
 </head>
 <body>
-    <h1>Real-Time Navigation Data</h1>
+    <div id="sidebar">
+        <h2>Navigation Info</h2>
+        <p>Latitude: <span id="latitude">--</span></p>
+        <p>Longitude: <span id="longitude">--</span></p>
+        <p>Compass Heading: <span id="compass_heading">--</span>°</p>
+        <p>Heading Difference: <span id="angle_to_ref">--</span>°</p>
+        <p>Distance to Goal: <span id="distance_to_goal">--</span> meters</p>
+
+        <h3>Mode</h3>
+        <label class="switch">
+            <input type="checkbox" id="mode_switch">
+            <span class="slider round"></span>
+        </label>
+        <p>Mode: <span id="mode_indicator">Live</span></p>
+
+        <h3>Settings</h3>
+        <div id="settings">
+            <label for="ip_address">Data Source IP:</label>
+            <input type="text" id="ip_address" placeholder="Enter IP address" value="127.0.0.1" />
+            <button id="set_ip_button">Set IP Address</button>
+
+            <label for="polling_rate">Polling Interval (seconds):</label>
+            <input type="number" id="polling_rate" min="0.1" step="0.1" value="0.5" />
+            <button id="set_polling_rate_button">Set Polling Interval</button>
+        </div>
+
+        <button id="clear_data_button">Clear Data</button>
+    </div>
     <div id="map"></div>
+    <div id="timeline_slider"></div>
 
-    <script>
-        var socket = io.connect('http://' + document.domain + ':' + location.port);
-
-        // Initialize the map and set default center and zoom level
-        var map = L.map('map').setView([0, 0], 2);
-
-        // Set up the OpenStreetMap tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-        }).addTo(map);
-
-        // Create a marker for the current position
-        var marker = L.marker([0, 0]).addTo(map);
-
-        // Define blue and red arrows for compass heading and angle to reference
-        var compassLine = L.polyline([], { color: 'blue', weight: 3 }).addTo(map);
-        var refLine = L.polyline([], { color: 'red', weight: 3 }).addTo(map);
-
-        // Helper function to calculate endpoint of arrow based on heading and distance
-        function calculateEndpoint(lat, lon, heading, distance) {
-            // Convert heading from degrees to radians
-            var headingRad = heading * Math.PI / 180;
-            
-            // Earth radius in meters
-            var earthRadius = 6378137;
-
-            // Calculate the new coordinates
-            var newLat = lat + (distance * Math.cos(headingRad)) / earthRadius * (180 / Math.PI);
-            var newLon = lon + (distance * Math.sin(headingRad)) / (earthRadius * Math.cos(lat * Math.PI / 180)) * (180 / Math.PI);
-
-            return [newLat, newLon];
-        }
-
-        // Listen for 'nav_data' event from the server
-        socket.on('nav_data', function (data) {
-            var lat = data.position.lat;
-            var lon = data.position.lon;
-            var angle_to_ref = data.angle_to_ref; // Angle relative to compass heading
-            var compass_heading = data.compass_heading; // Angle relative to north
-            var distance_to_ref = data.distance_to_ref;
-
-            // Update the marker position and popup
-            marker.setLatLng([lat, lon]).bindPopup(
-                'Lat: ' + lat + ', Lon: ' + lon + '<br>' +
-                'Angle to Ref: ' + angle_to_ref.toFixed(2) + '°<br>' +
-                'Compass Heading: ' + compass_heading.toFixed(2) + '°<br>' +
-                'Distance to Ref: ' + distance_to_ref.toFixed(2) + ' meters'
-            ).openPopup();
-
-            // Center the map on the updated position
-            map.setView([lat, lon], 14);
-
-            // Calculate endpoint for compass heading (500 meters distance for visual clarity)
-            var compassEndpoint = calculateEndpoint(lat, lon, compass_heading, 500);
-
-            // Calculate endpoint for angle to reference
-            // Since angle_to_ref is relative to the current heading, we rotate from the compass heading
-            var refEndpoint = calculateEndpoint(lat, lon, compass_heading + angle_to_ref, 500);
-
-            // Update the blue arrow for compass heading
-            compassLine.setLatLngs([[lat, lon], compassEndpoint]);
-
-            // Update the red arrow for angle to reference (relative to compass heading)
-            refLine.setLatLngs([[lat, lon], refEndpoint]);
-        });
-    </script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.1.3/socket.io.min.js"></script>
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js"></script>
+    <!-- Leaflet Plugins -->
+    <script src="https://unpkg.com/leaflet-polylinegradient@0.2.1/leaflet.polylinegradient.min.js"></script>
+    <!-- noUiSlider JS -->
+    <script src="https://cdn.jsdelivr.net/npm/nouislider@15.5.1/dist/nouislider.min.js"></script>
+    <!-- App JS -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
 </body>
 </html>

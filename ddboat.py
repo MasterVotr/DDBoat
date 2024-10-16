@@ -19,9 +19,7 @@ Dependencies:
 Ensure that the 'drivers-ddboat-v2' directory is in the same directory as this module
 or adjust the sys.path accordingly.
 
-Author: Your Name
-Date: October 2024
-Contact: your.email@example.com
+
 """
 import signal
 
