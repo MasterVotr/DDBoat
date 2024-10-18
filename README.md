@@ -66,17 +66,12 @@ latest_nav_data = {
    git clone https://github.com/MasterVotr/DDBoat.git
    ```
 
-2. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-3. Run the visualization server:
+2. Run the visualization server:
    ```
    python nav_data_app.py
    ```
 
-4. Open a web browser and navigate to `http://localhost:5000` to view the visualization.
+3. Open a web browser and navigate to `http://localhost:5000` to view the visualization.
 
 ## 🎨 Features
 
@@ -120,3 +115,6 @@ The API server should return JSON data in the following format:
 
 - Johannes v. Grundherr
   - GitHub: [Johannes-ece](https://github.com/Johannes-ece)
+
+- Matic "Mato" Puhar
+  - LinkedIn: [LinkedIn](https://www.linkedin.com/in/matic-mato-puhar?utm_source=share&utm_campaign=share_via&utm_content=profile&utm_medium=android_app)
